@@ -182,7 +182,7 @@ async function checkDependencies(maxConcurrent: number = 5) {
 		await readFile('package.json', 'utf-8')
 	);
 
-	let allDependencies = packageJson.dependencies;
+	let allDependencies = packageJson.dependencies ?? {};
 
 	if (includeDev) {
 		allDependencies = {
