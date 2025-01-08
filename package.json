@@ -1,8 +1,26 @@
 {
-  "name": "analyzedeps",
-  "version": "1.0.0",
-  "description": "Check usage of dependencies in a project. Suggest removal of unused dependencies and update of outdated dependencies.",
-  "main": "index.ts",
+  "name": "analyze-dependencies",
+  "version": "1.0.1",
+  "keywords": [
+    "cli",
+    "analyze",
+    "dependencies"
+  ],
+  "description": "Check usage of dependencies in your source code. Suggest removal of unused dependencies and update of outdated dependencies.",
+  "main": "index.js",
+  "bin": {
+    "analyze-dependencies": "./index.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jamoy/analyze-dependencies.git"
+  },
+  "bugs": {
+    "url": "https://github.com/jamoy/analyze-dependencies/issues"
+  },
   "type": "module",
   "dependencies": {
     "@babel/parser": "^7.26.3",
@@ -14,5 +32,10 @@
     "@types/node": "^22.10.5",
     "type-fest": "^4.31.0",
     "typescript": "^5.7.2"
-  }
+  },
+  "files": [
+    "index.js",
+    "LICENSE",
+    "package.json"
+  ]
 }

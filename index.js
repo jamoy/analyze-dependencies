@@ -70,11 +70,7 @@ async function getLatestVersion(packageName) {
 }
 function checkVulnerabilities(packageName, version) {
     return new Promise((resolve) => {
-        const requestBody = JSON.stringify({
-            name: packageName,
-            version: version,
-            requires: { [packageName]: version }
-        });
+        const requestBody = JSON.stringify({ [packageName]: [version] });
         const options = {
             hostname: 'registry.npmjs.org',
             path: '/-/npm/v1/security/advisories/bulk',
@@ -90,12 +86,27 @@ function checkVulnerabilities(packageName, version) {
             res.on('end', () => {
                 try {
                     const response = JSON.parse(data);
-                    const vulns = Object.values(response.advisories || {})
+                    if (response.error) {
+                        resolve([]);
+                        return;
+                    }
+                    let vulns = [];
+                    Object.entries(response)
+                        .forEach(([key, advisories]) => {
+                        vulns = [
+                            ...vulns,
+                            ...(advisories ?? []).map(adv => ({
+                                package: key,
+                                ...adv,
+                            })),
+                        ];
+                    });
+                    vulns = vulns
                         .filter(adv => {
-                        // Basic version check - could be enhanced with semver
                         return adv.vulnerable_versions.includes(version);
                     })
                         .map(adv => ({
+                        package: adv.package,
                         title: adv.title,
                         severity: adv.severity,
                         cwe: adv.cwe,
@@ -177,7 +188,7 @@ async function checkDependencies(maxConcurrent = 5) {
         console.log(chalk.green('✅ All dependencies are being used!'));
     }
     // Version comparison
-    console.log('\n' + chalk.bold('📈 Version Analysis:'));
+    console.log('\n' + chalk.bold('📈 Potential Updates:'));
     for (const dep of dependencyMap.values()) {
         if (dep.latestVersion && dep.latestVersion !== 'unknown' && dep.latestVersion !== dep.version) {
             console.log(`  ${chalk.cyan(dep.name)}: ${chalk.yellow(dep.version)} → ${chalk.green(dep.latestVersion)}`);

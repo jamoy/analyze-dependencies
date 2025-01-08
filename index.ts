@@ -31,25 +31,14 @@ interface Vulnerability {
 }
 
 interface NpmAuditResponse {
-	advisories: {
-		[key: string]: {
-			title: string;
-			severity: string;
-			cwe: string[];
-			cvss: { score: number; vectorString: string };
-			url: string;
-			vulnerable_versions: string;
-		};
-	};
-	metadata: {
-		vulnerabilities: {
-			info: number;
-			low: number;
-			moderate: number;
-			high: number;
-			critical: number;
-		};
-	};
+	[key: string]: {
+		title: string;
+		severity: string;
+		cwe: string[];
+		cvss: { score: number; vectorString: string };
+		url: string;
+		vulnerable_versions: string;
+	}[];
 }
 
 async function findFiles(dir: string, extensions: string[]): Promise<string[]> {
@@ -122,11 +111,7 @@ async function getLatestVersion(packageName: string): Promise<string> {
 
 function checkVulnerabilities(packageName: string, version: string): Promise<Vulnerability[]> {
 	return new Promise((resolve) => {
-		const requestBody = JSON.stringify({
-			name: packageName,
-			version: version,
-			requires: { [packageName]: version }
-		});
+		const requestBody = JSON.stringify({ [packageName]: [version] });
 
 		const options = {
 			hostname: 'registry.npmjs.org',
@@ -144,18 +129,38 @@ function checkVulnerabilities(packageName: string, version: string): Promise<Vul
 			res.on('end', () => {
 				try {
 					const response = JSON.parse(data) as NpmAuditResponse;
-					const vulns = Object.values(response.advisories || {})
+
+					if (response.error) {
+						resolve([]);
+						return;
+					}
+
+					let vulns = [];
+
+					Object.entries(response)
+						.forEach(([key, advisories]) => {
+							vulns = [
+								...vulns,
+								...(advisories ?? []).map(adv => ({
+									package: key,
+									...adv,
+								})),
+							];
+						});
+
+					vulns = vulns
 						.filter(adv => {
-							// Basic version check - could be enhanced with semver
 							return adv.vulnerable_versions.includes(version);
 						})
 						.map(adv => ({
+							package: adv.package,
 							title: adv.title,
 							severity: adv.severity,
 							cwe: adv.cwe,
 							cvss: adv.cvss,
 							advisory: adv.url
 						}));
+
 					resolve(vulns);
 				} catch (error) {
 					resolve([]);
@@ -226,6 +231,7 @@ async function checkDependencies(maxConcurrent: number = 5) {
 					getLatestVersion(name),
 					checkVulnerabilities(name, info.version)
 				]);
+
 				info.latestVersion = latestVersion;
 				info.vulnerabilities = vulnerabilities;
 			})
@@ -247,7 +253,7 @@ async function checkDependencies(maxConcurrent: number = 5) {
 	}
 
 	// Version comparison
-	console.log('\n' + chalk.bold('📈 Version Analysis:'));
+	console.log('\n' + chalk.bold('📈 Potential Updates:'));
 	for (const dep of dependencyMap.values()) {
 		if (dep.latestVersion && dep.latestVersion !== 'unknown' && dep.latestVersion !== dep.version) {
 			console.log(
