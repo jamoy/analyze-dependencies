@@ -1,0 +1,18 @@
+{
+  "name": "analyzedeps",
+  "version": "1.0.0",
+  "description": "Check usage of dependencies in a project. Suggest removal of unused dependencies and update of outdated dependencies.",
+  "main": "index.ts",
+  "type": "module",
+  "dependencies": {
+    "@babel/parser": "^7.26.3",
+    "@babel/traverse": "^7.26.4",
+    "chalk": "^5.4.1"
+  },
+  "devDependencies": {
+    "@babel/types": "^7.26.3",
+    "@types/node": "^22.10.5",
+    "type-fest": "^4.31.0",
+    "typescript": "^5.7.2"
+  }
+}
